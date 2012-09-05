@@ -1,14 +1,17 @@
 var mk_multiedit = {
 	config : {
 		mainID : '.test', // attach the submit and cancel button to
-		parent : '#todoItem' // what elements are edit
+		parent : '#todoItem', // what elements are edit
+		json_keys: '.edit', // where is the json keys attribute data-json on?,
+		json_values: '.edit', // where is the json value attribute data-json on?
+		closest: 'li' // is there an li on this page?
 	},
 	json : '',
-
-	init : function (config) {
+	init : function (config) { // MAIN function to which sets off the chain of events
 		$.extend(mk_multiedit.config, config)
 		$(mk_multiedit.config.parent).on('click', mk_multiedit.make_editable);	
 		mk_multiedit.submit();
+		mk_multiedit.cancel();
 	},
 	make_editable : function () {
 				$(mk_multiedit.config.parent).each(function () {
@@ -21,27 +24,33 @@ var mk_multiedit = {
 				$('<input/>', {type: 'submit', class: 'cancel', value: 'cancel!'}).appendTo(mk_multiedit.config.mainID);
 				$(mk_multiedit.config.parent).off('click');
 	}, 
-	submit : function () {
+	submit : function () { // will populate the json variable up above
 		$(mk_multiedit.config.mainID).on('click', '.submit', function () {
-			var key = new Array();
-			var value = new Array();
-			$('.edit').each(function ( index ) {
-				value[index] = $(this).data('json');
-				key[$(this).data('json')] = $(this).val();
+			var key = new Array(); // e.g = data-json
+			var value = new Array(); // the {value:key}
+			$(mk_multiedit.config.json_keys).each(function ( index ) {
+				var cur_json = $(this).data('json'); // this refers to the current items json value gotten through json
+				key[index] = cur_json; // { [KEY]: VALUE } // this will get the key
+				value[cur_json] = $(this).closest(mk_multiedit.config.closest).find('input.edit').val(); // { KEY: [VALUES]} // this will get the value 
 			});
-			this.json = mk_multiedit.form_to_json(key, value, false);
+			mk_multiedit.json = mk_multiedit.form_to_json(key, value, false);
 			mk_multiedit.complete();
 		});
 	}, 
-	complete : function () {
+	cancel : function () { // TODO: cancel will return the form its orginal self;
+		$(mk_multiedit.config.mainID).on('click', '.cancel', function () {
+			mk_multiedit.complete();
+		});
+	},
+	complete : function () { // makes the value of the field empty
 		$(mk_multiedit.config.parent).each(function () {
-			$(this).text( $(this).find('.edit').val() );
+			$(this).text( $(this).find('.edit').val() );// go get the element and set the item to the 
 		});
 		$('.cancel').remove();
 		$('.submit').remove();
 		$(mk_multiedit.config.parent).on('click', mk_multiedit.make_editable);	
 	},
-	form_to_json : function (value, key, indexed) {
+	form_to_json : function (key,value, indexed) { // takes normal form value into json object
 			var json = "";
 			$(key).each(function (index) {
 				number = (indexed) ? index : ""; // should i add the number
